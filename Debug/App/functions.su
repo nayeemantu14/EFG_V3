@@ -1,0 +1,12 @@
+../App/functions.c:10:6:openValve	16	static
+../App/functions.c:29:6:closeValve	16	static
+../App/functions.c:47:6:resetFloodEvent	16	static
+../App/functions.c:64:10:measureBattery	16	static
+../App/functions.c:91:6:monitorBattery	24	static
+../App/functions.c:117:6:statusled	8	static
+../App/functions.c:127:6:batteryled	8	static
+../App/functions.c:137:6:batteryAlarm	8	static
+../App/functions.c:146:13:RTC_AlarmConfig	88	static
+../App/functions.c:181:6:alert	8	static
+../App/functions.c:189:6:removeFloodAlert	8	static
+../App/functions.c:204:6:console	16	static

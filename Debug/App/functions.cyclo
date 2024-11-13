@@ -1,0 +1,12 @@
+../App/functions.c:10:6:openValve	2
+../App/functions.c:29:6:closeValve	2
+../App/functions.c:47:6:resetFloodEvent	3
+../App/functions.c:64:10:measureBattery	5
+../App/functions.c:91:6:monitorBattery	5
+../App/functions.c:117:6:statusled	1
+../App/functions.c:127:6:batteryled	1
+../App/functions.c:137:6:batteryAlarm	1
+../App/functions.c:146:13:RTC_AlarmConfig	2
+../App/functions.c:181:6:alert	1
+../App/functions.c:189:6:removeFloodAlert	1
+../App/functions.c:204:6:console	1
