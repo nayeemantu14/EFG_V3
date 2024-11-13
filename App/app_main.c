@@ -185,13 +185,8 @@ void openValve(void)
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET); // Activate valve
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // Start PWM signal for valve control
 	HAL_Delay(50);
-	for(uint16_t i = 1850; i >= 900; i -= 50)
-	{
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, i); // Set PWM duty cycle for valve opening
-		HAL_Delay(30);
-	}
-
-	HAL_Delay(50);
+	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1000); // Set PWM duty cycle for valve closing
+	HAL_Delay(200);
 	HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1); // Stop PWM signal
 	HAL_Delay(50);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET); // Deactivate valve
@@ -204,12 +199,8 @@ void closeValve(void)
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET); // Activate valve
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // Start PWM signal for valve control
 	HAL_Delay(50);
-	for(uint16_t i = 900; i <= 1850; i += 50)
-	{
-		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, i); // Set PWM duty cycle for valve closing
-		HAL_Delay(30);
-	}
-	HAL_Delay(50);
+	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1900); // Set PWM duty cycle for valve closing
+	HAL_Delay(200);
 	HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1); // Stop PWM signal
 	HAL_Delay(50);
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET); // Deactivate valve
