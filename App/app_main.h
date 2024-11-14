@@ -15,7 +15,7 @@
 
 #define UID_BASE_ADDRESS 0x1FF80050
 #define valveOpenuS 	 900
-#define valveCloseuS	 1850
+#define valveCloseuS	 1800
 
 // External peripheral handlers declaration
 extern ADC_HandleTypeDef hadc;
@@ -58,6 +58,7 @@ typedef struct {
 static SystemContext g_ctx;
 
 // Function prototypes
+void SystemClock_Config();
 void openValve(void);
 void closeValve(void);
 void alert(void);

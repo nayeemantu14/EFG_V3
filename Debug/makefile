@@ -61,8 +61,8 @@ all: main-build
 main-build: EFG_V3.elf secondary-outputs
 
 # Tool invocations
-EFG_V3.elf EFG_V3.map: $(OBJS) $(USER_OBJS) C:\Work\Firmware\ST\ Workspace\EFG_V3\STM32L010C6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "EFG_V3.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Work\Firmware\ST Workspace\EFG_V3\STM32L010C6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="EFG_V3.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+EFG_V3.elf EFG_V3.map: $(OBJS) $(USER_OBJS) C:\Work\Projects\ST\ Workspace\EFG_V3\STM32L010C6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "EFG_V3.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0plus -T"C:\Work\Projects\ST Workspace\EFG_V3\STM32L010C6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="EFG_V3.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
