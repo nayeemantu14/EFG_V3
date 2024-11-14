@@ -14,6 +14,8 @@
 #include <stdbool.h>
 
 #define UID_BASE_ADDRESS 0x1FF80050
+#define valveOpenuS 	 900
+#define valveCloseuS	 1850
 
 // External peripheral handlers declaration
 extern ADC_HandleTypeDef hadc;
