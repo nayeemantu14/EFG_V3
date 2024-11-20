@@ -53,6 +53,9 @@ default.size.stdout \
 OBJDUMP_LIST += \
 EFG_V3.list \
 
+OBJCOPY_HEX += \
+EFG_V3.hex \
+
 
 # All Target
 all: main-build
@@ -76,12 +79,17 @@ EFG_V3.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	@echo 'Finished building: $@'
 	@echo ' '
 
+EFG_V3.hex: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-objcopy  -O ihex $(EXECUTABLES) "EFG_V3.hex"
+	@echo 'Finished building: $@'
+	@echo ' '
+
 # Other Targets
 clean:
-	-$(RM) EFG_V3.elf EFG_V3.list EFG_V3.map default.size.stdout
+	-$(RM) EFG_V3.elf EFG_V3.hex EFG_V3.list EFG_V3.map default.size.stdout
 	-@echo ' '
 
-secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST)
+secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_HEX)
 
 fail-specified-linker-script-missing:
 	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'

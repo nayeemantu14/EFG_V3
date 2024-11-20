@@ -74,7 +74,7 @@ void initSystem(SystemContext *ctx)
 	ctx->currentState = STATE_INIT;
 
 	RTC_ExitInitMode(&hrtc);
-	strcpy(message, "EFloodGuardLP(v3.4)\r\n");
+	strcpy(message, "EFloodGuardLP(v3.5)\r\n");
 	console(message);
 
 	if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_9) == GPIO_PIN_SET)
@@ -101,7 +101,7 @@ void processState(SystemContext *ctx)
 	{
 	case STATE_NORMAL:
 
-		if((floodFlag && Low_battery != 2) || (floodFlag == 0 && Low_battery == 0))
+		if((floodFlag && Low_battery != 2) || (valve_open == 0 && Low_battery == 0))
 		{
 			if((now - holdTime >= 1000) && buttonState)
 			{
@@ -275,6 +275,7 @@ void monitorBattery(void)
 		RTC_AlarmConfig(second[item++]);
 		if (valve_open == 1)
 		{
+			floodFlag = 1;
 			closeValve();									// Close Valve if Critically low Battery
 		}
 		strcpy(message, "Battery critically low\r\n");

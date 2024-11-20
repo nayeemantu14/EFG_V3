@@ -10,10 +10,10 @@
 ../App/app_main.c:214:6:resetFloodEvent	3
 ../App/app_main.c:231:10:measureBattery	5
 ../App/app_main.c:258:6:monitorBattery	5
-../App/app_main.c:288:6:statusled	1
-../App/app_main.c:298:6:batteryled	1
-../App/app_main.c:308:6:batteryAlarm	1
-../App/app_main.c:317:6:RTC_AlarmConfig	2
-../App/app_main.c:352:6:alert	1
-../App/app_main.c:360:6:removeFloodAlert	1
-../App/app_main.c:375:6:console	1
+../App/app_main.c:289:6:statusled	1
+../App/app_main.c:299:6:batteryled	1
+../App/app_main.c:309:6:batteryAlarm	1
+../App/app_main.c:318:6:RTC_AlarmConfig	2
+../App/app_main.c:353:6:alert	1
+../App/app_main.c:361:6:removeFloodAlert	1
+../App/app_main.c:376:6:console	1

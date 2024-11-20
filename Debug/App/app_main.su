@@ -10,10 +10,10 @@
 ../App/app_main.c:214:6:resetFloodEvent	16	static
 ../App/app_main.c:231:10:measureBattery	16	static
 ../App/app_main.c:258:6:monitorBattery	24	static
-../App/app_main.c:288:6:statusled	8	static
-../App/app_main.c:298:6:batteryled	8	static
-../App/app_main.c:308:6:batteryAlarm	8	static
-../App/app_main.c:317:6:RTC_AlarmConfig	88	static
-../App/app_main.c:352:6:alert	8	static
-../App/app_main.c:360:6:removeFloodAlert	8	static
-../App/app_main.c:375:6:console	16	static
+../App/app_main.c:289:6:statusled	8	static
+../App/app_main.c:299:6:batteryled	8	static
+../App/app_main.c:309:6:batteryAlarm	8	static
+../App/app_main.c:318:6:RTC_AlarmConfig	88	static
+../App/app_main.c:353:6:alert	8	static
+../App/app_main.c:361:6:removeFloodAlert	8	static
+../App/app_main.c:376:6:console	16	static
