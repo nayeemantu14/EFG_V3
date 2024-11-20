@@ -100,7 +100,8 @@ void processState(SystemContext *ctx)
 	switch(ctx->currentState)
 	{
 	case STATE_NORMAL:
-		if((floodFlag && Low_battery != 2) || (!floodFlag && Low_battery == 0))
+
+		if((floodFlag && Low_battery != 2) || (floodFlag == 0 && Low_battery == 0))
 		{
 			if((now - holdTime >= 1000) && buttonState)
 			{
@@ -164,6 +165,8 @@ void processState(SystemContext *ctx)
 
 	case STATE_SLEEP:
 		monitorBattery();
+		sprintf(message, "Low battery = %d, Flood Flag = %d\r\n", Low_battery, floodFlag);
+		console(message);
 		wupFlag = 0;
 		strcpy(message, "Entering Sleep\r\n");
 		console(message);
