@@ -168,7 +168,7 @@ void processState(SystemContext *ctx)
 		sprintf(message, "Low battery = %d, Flood Flag = %d\r\n", Low_battery, floodFlag);
 		console(message);
 		wupFlag = 0;
-		strcpy(message, "Entering Sleep\r\n");
+		strcpy(message, "Entering Sleep.\r\n");
 		console(message);
 		HAL_SuspendTick();
 		HAL_PWR_EnterSTOPMode(PWR_LOWPOWERREGULATOR_ON, PWR_STOPENTRY_WFI);

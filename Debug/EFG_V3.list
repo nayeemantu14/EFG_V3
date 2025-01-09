@@ -1175,15 +1175,15 @@ void processState(SystemContext *ctx)
  800086e:	4b1f      	ldr	r3, [pc, #124]	@ (80008ec <processState+0x218>)
  8000870:	2200      	movs	r2, #0
  8000872:	701a      	strb	r2, [r3, #0]
-		strcpy(message, "Entering Sleep\r\n");
+		strcpy(message, "Entering Sleep.\r\n");
  8000874:	4b19      	ldr	r3, [pc, #100]	@ (80008dc <processState+0x208>)
  8000876:	4a25      	ldr	r2, [pc, #148]	@ (800090c <processState+0x238>)
  8000878:	ca13      	ldmia	r2!, {r0, r1, r4}
  800087a:	c313      	stmia	r3!, {r0, r1, r4}
  800087c:	6811      	ldr	r1, [r2, #0]
  800087e:	6019      	str	r1, [r3, #0]
- 8000880:	7912      	ldrb	r2, [r2, #4]
- 8000882:	711a      	strb	r2, [r3, #4]
+ 8000880:	8892      	ldrh	r2, [r2, #4]
+ 8000882:	809a      	strh	r2, [r3, #4]
 		console(message);
  8000884:	4b15      	ldr	r3, [pc, #84]	@ (80008dc <processState+0x208>)
  8000886:	0018      	movs	r0, r3
