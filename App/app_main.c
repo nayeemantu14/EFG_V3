@@ -89,6 +89,7 @@ void initSystem(SystemContext *ctx)
 		floodFlag = 1;
 		HAL_Delay(100);
 		closeValve();
+		RTC_AlarmConfig(second[1]);
 		ctx->currentState = STATE_FLOOD;
 	}
 	alert();
@@ -239,11 +240,11 @@ uint16_t measureBattery(void)
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET); 	// Disable battery voltage measurement
 
 	// Check battery voltage threshold
-	if(analogbatt < 3200 && analogbatt >= 3100)
+	if(analogbatt < 3670 && analogbatt >= 3470)
 	{
 		Low_battery = 1; 									// Set low battery flag if voltage is below threshold
 	}
-	else if(analogbatt < 2800 && analogbatt > 0)
+	else if(analogbatt < 3475 && analogbatt > 0)
 	{
 		Low_battery = 2; 									// Set low battery flag flag if voltage is below critical threshold
 	}
