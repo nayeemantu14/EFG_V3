@@ -240,11 +240,11 @@ uint16_t measureBattery(void)
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET); 	// Disable battery voltage measurement
 
 	// Check battery voltage threshold
-	if(analogbatt < 3670 && analogbatt >= 3470)
+	if(analogbatt < 3412 && analogbatt >= 3227)
 	{
 		Low_battery = 1; 									// Set low battery flag if voltage is below threshold
 	}
-	else if(analogbatt < 3475 && analogbatt > 0)
+	else if(analogbatt < 3227 && analogbatt > 0)
 	{
 		Low_battery = 2; 									// Set low battery flag flag if voltage is below critical threshold
 	}
