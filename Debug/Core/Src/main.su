@@ -7,4 +7,4 @@
 ../Core/Src/main.c:393:13:MX_TIM2_Init	32	static
 ../Core/Src/main.c:442:13:MX_TIM21_Init	32	static
 ../Core/Src/main.c:487:13:MX_GPIO_Init	48	static
-../Core/Src/main.c:553:6:Error_Handler	8	static,ignoring_inline_asm
+../Core/Src/main.c:560:6:Error_Handler	8	static,ignoring_inline_asm

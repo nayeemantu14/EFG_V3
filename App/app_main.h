@@ -17,6 +17,11 @@
 #define valveOpenuS 	 900
 #define valveCloseuS	 1800
 
+#define THRESH_NORMAL_DOWN 3360   // normal to low
+#define THRESH_LOW_DOWN    3210   // low to critical
+#define THRESH_LOW_UP      3225   // critical up to low
+#define THRESH_NORMAL_UP   3380   // low up to normal
+
 // External peripheral handlers declaration
 extern ADC_HandleTypeDef hadc;
 extern TIM_HandleTypeDef htim2;

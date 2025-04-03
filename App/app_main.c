@@ -231,30 +231,83 @@ void resetFloodEvent(void)
 // Function to measure battery voltage
 uint16_t measureBattery(void)
 {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET); 	// Enable battery voltage measurement
-	HAL_ADC_Start(&hadc); 									// Start ADC conversion
-	HAL_ADC_PollForConversion(&hadc, HAL_MAX_DELAY); 		// Wait for ADC conversion to complete
-	uint16_t analogbatt = HAL_ADC_GetValue(&hadc); 			// Read ADC value
-	HAL_Delay(5);
-	HAL_ADC_Stop(&hadc); 									// Stop ADC conversion
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET); 	// Disable battery voltage measurement
+    // 1. Enable battery voltage measurement (once)
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET); // Power the sensing circuit
 
-	// Check battery voltage threshold
-	if(analogbatt < 3412 && analogbatt >= 3227)
-	{
-		Low_battery = 1; 									// Set low battery flag if voltage is below threshold
-	}
-	else if(analogbatt < 3227 && analogbatt > 0)
-	{
-		Low_battery = 2; 									// Set low battery flag flag if voltage is below critical threshold
-	}
-	else
-	{
-		Low_battery = 0;
-	}
-	return analogbatt; 										// Return battery voltage reading
+    uint32_t sum = 0;              // Accumulator for multiple ADC readings
+    const int NUM_SAMPLES = 5;     // Number of ADC samples to average
+
+    // 2. Read the ADC multiple times
+    for (int i = 0; i < NUM_SAMPLES; i++)
+    {
+        // Start ADC conversion
+        HAL_ADC_Start(&hadc);
+        // Wait for ADC conversion to complete
+        HAL_ADC_PollForConversion(&hadc, HAL_MAX_DELAY);
+        // Add the reading to sum
+        sum += HAL_ADC_GetValue(&hadc);
+        // Stop ADC
+        HAL_ADC_Stop(&hadc);
+
+        // Brief delay between samples (adjust if needed)
+        HAL_Delay(5);
+    }
+
+    // 3. Disable battery voltage measurement
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+
+    // 4. Calculate the average reading
+    uint16_t analogbatt = (uint16_t)(sum / NUM_SAMPLES);
+
+    // 5. Apply hysteresis logic (thresholds defined in app_main.h)
+    switch (Low_battery)
+    {
+        case 0: // Currently NORMAL
+            if (analogbatt < THRESH_NORMAL_DOWN)
+            {
+                // If below 3360, decide if Low or Critical
+                if (analogbatt < THRESH_LOW_DOWN)
+                {
+                    Low_battery = 2; // Critical
+                }
+                else
+                {
+                    Low_battery = 1; // Low
+                }
+            }
+            // else remain Normal
+            break;
+
+        case 1: // Currently LOW
+            if (analogbatt < THRESH_LOW_DOWN)
+            {
+                Low_battery = 2; // Drop to Critical
+            }
+            else if (analogbatt > THRESH_NORMAL_UP)
+            {
+                Low_battery = 0; // Go back to Normal
+            }
+            // else remain Low
+            break;
+
+        case 2: // Currently CRITICAL
+            // Must rise above THRESH_LOW_UP to go back to LOW
+            if (analogbatt >= THRESH_LOW_UP)
+            {
+                Low_battery = 1; // From Critical up to Low
+            }
+            // No direct jump to Normal from Critical
+            break;
+
+        default:
+            // Fallback in case Low_battery has an invalid value
+            Low_battery = 0;
+            break;
+    }
+
+    // 6. Return the averaged ADC reading (for logging/debugging)
+    return analogbatt;
 }
-
 // Function to monitor battery voltage
 void monitorBattery(void)
 {
