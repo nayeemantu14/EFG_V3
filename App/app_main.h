@@ -17,10 +17,10 @@
 #define valveOpenuS 	 900
 #define valveCloseuS	 1800
 
-#define THRESH_NORMAL_DOWN 3360   // normal to low
-#define THRESH_LOW_DOWN    3210   // low to critical
-#define THRESH_LOW_UP      3225   // critical up to low
-#define THRESH_NORMAL_UP   3380   // low up to normal
+#define THRESH_NORMAL_DOWN 3380   // normal to low
+#define THRESH_LOW_DOWN    3250   // low to critical
+#define THRESH_LOW_UP      3270  // critical up to low
+#define THRESH_NORMAL_UP   3400   // low up to normal
 
 // External peripheral handlers declaration
 extern ADC_HandleTypeDef hadc;
@@ -67,6 +67,7 @@ void SystemClock_Config();
 void openValve(void);
 void closeValve(void);
 void alert(void);
+static void rampValvePWM(uint16_t from, uint16_t to);
 void removeFloodAlert(void);
 void resetFloodEvent(void);
 uint16_t measureBattery(void);

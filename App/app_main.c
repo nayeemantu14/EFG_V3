@@ -74,7 +74,7 @@ void initSystem(SystemContext *ctx)
 	ctx->currentState = STATE_INIT;
 
 	RTC_ExitInitMode(&hrtc);
-	strcpy(message, "EFloodGuardLP(v3.5)\r\n");
+	strcpy(message, "EFloodGuardLP(v3.7)\r\n");
 	console(message);
 
 	if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_9) == GPIO_PIN_SET)
@@ -186,30 +186,69 @@ void processState(SystemContext *ctx)
 // Function to open the valve
 void openValve(void)
 {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET); // Activate valve
-	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // Start PWM signal for valve control
-	HAL_Delay(50);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, valveOpenuS); // Set PWM duty cycle for valve closing
-	HAL_Delay(500);
-	HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1); // Stop PWM signal
-	HAL_Delay(50);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET); // Deactivate valve
-	valve_open = 1;
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);   // power to actuator
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
+    /* current PWM = whatever was last written; get it from register     */
+    uint16_t start = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
+    rampValvePWM(start, valveOpenuS);
+
+    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+    valve_open = 1;
 }
 
 // Function to close the valve
 void closeValve(void)
 {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET); // Activate valve
-	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // Start PWM signal for valve control
-	HAL_Delay(50);
-	__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, valveCloseuS); // Set PWM duty cycle for valve closing
-	HAL_Delay(500);
-	HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1); // Stop PWM signal
-	HAL_Delay(50);
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET); // Deactivate valve
-	valve_open = 0;
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);   // power to actuator
+    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+
+    uint16_t start = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
+    rampValvePWM(start, valveCloseuS);
+
+    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+    valve_open = 0;
 }
+
+static void rampValvePWM(uint16_t from, uint16_t to)
+{
+	/* ---- Tunables ------------------------------------------------------- */
+	const uint16_t STEP_US   = 10;   // 10 µs per step  (≈0.5 deg for most hobby servos)
+	const uint8_t  STEP_MS   = 10;   // 10 ms between steps (≈100 deg/s over 900-1800 µs range)
+	const uint16_t MIN_US    = 500;  // absolute safety limits
+	const uint16_t MAX_US    = 2500;
+	/* -------------------------------------------------------------------- */
+
+	/* Safety clamp                                                     */
+	if (to   < MIN_US) to   = MIN_US;
+	if (to   > MAX_US) to   = MAX_US;
+	if (from < MIN_US) from = MIN_US;
+	if (from > MAX_US) from = MAX_US;
+
+	/* Decide direction + do the walk                                    */
+	if (from < to)                               /* increasing (e.g., open→close) */
+	{
+		for (uint16_t p = from; p <= to; p += STEP_US)
+		{
+			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, p);
+			HAL_Delay(STEP_MS);
+		}
+	}
+	else if (from > to)                          /* decreasing (e.g., close→open) */
+	{
+		for (uint16_t p = from; p >= to; p -= STEP_US)
+		{
+			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, p);
+			HAL_Delay(STEP_MS);
+			if (p < STEP_US) break;              /* protect against unsigned wrap */
+		}
+	}
+	/* small settle time so the motor can finish the move                */
+	HAL_Delay(100);
+}
+
 
 // Function to reset flood event
 void resetFloodEvent(void)
@@ -231,82 +270,82 @@ void resetFloodEvent(void)
 // Function to measure battery voltage
 uint16_t measureBattery(void)
 {
-    // 1. Enable battery voltage measurement (once)
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET); // Power the sensing circuit
+	// 1. Enable battery voltage measurement (once)
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_SET); // Power the sensing circuit
 
-    uint32_t sum = 0;              // Accumulator for multiple ADC readings
-    const int NUM_SAMPLES = 5;     // Number of ADC samples to average
+	uint32_t sum = 0;              // Accumulator for multiple ADC readings
+	const int NUM_SAMPLES = 5;     // Number of ADC samples to average
 
-    // 2. Read the ADC multiple times
-    for (int i = 0; i < NUM_SAMPLES; i++)
-    {
-        // Start ADC conversion
-        HAL_ADC_Start(&hadc);
-        // Wait for ADC conversion to complete
-        HAL_ADC_PollForConversion(&hadc, HAL_MAX_DELAY);
-        // Add the reading to sum
-        sum += HAL_ADC_GetValue(&hadc);
-        // Stop ADC
-        HAL_ADC_Stop(&hadc);
+	// 2. Read the ADC multiple times
+	for (int i = 0; i < NUM_SAMPLES; i++)
+	{
+		// Start ADC conversion
+		HAL_ADC_Start(&hadc);
+		// Wait for ADC conversion to complete
+		HAL_ADC_PollForConversion(&hadc, HAL_MAX_DELAY);
+		// Add the reading to sum
+		sum += HAL_ADC_GetValue(&hadc);
+		// Stop ADC
+		HAL_ADC_Stop(&hadc);
 
-        // Brief delay between samples (adjust if needed)
-        HAL_Delay(5);
-    }
+		// Brief delay between samples (adjust if needed)
+		HAL_Delay(5);
+	}
 
-    // 3. Disable battery voltage measurement
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+	// 3. Disable battery voltage measurement
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
 
-    // 4. Calculate the average reading
-    uint16_t analogbatt = (uint16_t)(sum / NUM_SAMPLES);
+	// 4. Calculate the average reading
+	uint16_t analogbatt = (uint16_t)(sum / NUM_SAMPLES);
 
-    // 5. Apply hysteresis logic (thresholds defined in app_main.h)
-    switch (Low_battery)
-    {
-        case 0: // Currently NORMAL
-            if (analogbatt < THRESH_NORMAL_DOWN)
-            {
-                // If below 3360, decide if Low or Critical
-                if (analogbatt < THRESH_LOW_DOWN)
-                {
-                    Low_battery = 2; // Critical
-                }
-                else
-                {
-                    Low_battery = 1; // Low
-                }
-            }
-            // else remain Normal
-            break;
+	// 5. Apply hysteresis logic (thresholds defined in app_main.h)
+	switch (Low_battery)
+	{
+	case 0: // Currently NORMAL
+		if (analogbatt < THRESH_NORMAL_DOWN)
+		{
+			// If below 3360, decide if Low or Critical
+			if (analogbatt < THRESH_LOW_DOWN)
+			{
+				Low_battery = 2; // Critical
+			}
+			else
+			{
+				Low_battery = 1; // Low
+			}
+		}
+		// else remain Normal
+		break;
 
-        case 1: // Currently LOW
-            if (analogbatt < THRESH_LOW_DOWN)
-            {
-                Low_battery = 2; // Drop to Critical
-            }
-            else if (analogbatt > THRESH_NORMAL_UP)
-            {
-                Low_battery = 0; // Go back to Normal
-            }
-            // else remain Low
-            break;
+	case 1: // Currently LOW
+		if (analogbatt < THRESH_LOW_DOWN)
+		{
+			Low_battery = 2; // Drop to Critical
+		}
+		else if (analogbatt > THRESH_NORMAL_UP)
+		{
+			Low_battery = 0; // Go back to Normal
+		}
+		// else remain Low
+		break;
 
-        case 2: // Currently CRITICAL
-            // Must rise above THRESH_LOW_UP to go back to LOW
-            if (analogbatt >= THRESH_LOW_UP)
-            {
-                Low_battery = 1; // From Critical up to Low
-            }
-            // No direct jump to Normal from Critical
-            break;
+	case 2: // Currently CRITICAL
+		// Must rise above THRESH_LOW_UP to go back to LOW
+		if (analogbatt >= THRESH_LOW_UP)
+		{
+			Low_battery = 1; // From Critical up to Low
+		}
+		// No direct jump to Normal from Critical
+		break;
 
-        default:
-            // Fallback in case Low_battery has an invalid value
-            Low_battery = 0;
-            break;
-    }
+	default:
+		// Fallback in case Low_battery has an invalid value
+		Low_battery = 0;
+		break;
+	}
 
-    // 6. Return the averaged ADC reading (for logging/debugging)
-    return analogbatt;
+	// 6. Return the averaged ADC reading (for logging/debugging)
+	return analogbatt;
 }
 // Function to monitor battery voltage
 void monitorBattery(void)
