@@ -74,7 +74,7 @@ void initSystem(SystemContext *ctx)
 	ctx->currentState = STATE_INIT;
 
 	RTC_ExitInitMode(&hrtc);
-	strcpy(message, "EFloodGuardLP(v3.7)\r\n");
+	strcpy(message, "EFloodGuardLP(v3.8)\r\n");
 	console(message);
 
 	if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_9) == GPIO_PIN_SET)
@@ -186,67 +186,143 @@ void processState(SystemContext *ctx)
 // Function to open the valve
 void openValve(void)
 {
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);   // power to actuator
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    static volatile bool isOpening = false;
+    HAL_StatusTypeDef status;
 
-    /* current PWM = whatever was last written; get it from register     */
-    uint16_t start = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
-    rampValvePWM(start, valveOpenuS);
+    /* Re-entrancy protection */
+    if (isOpening) {
+        return;
+    }
+    isOpening = true;
 
-    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+    /* Validate PWM parameters */
+    if (valveOpenuS < VALVE_MIN_PWM || valveOpenuS > VALVE_MAX_PWM) {
+        Error_Handler();
+        isOpening = false;
+        return;
+    }
+
+    /* Safety check: Ensure timer is stopped before starting */
+    HAL_TIM_PWM_Stop(VALVE_PWM_TIMER, VALVE_PWM_CHANNEL);
+
+    /* Actuator power control */
+    HAL_GPIO_WritePin(VALVE_GPIO_PORT, VALVE_GPIO_PIN, GPIO_PIN_SET);
+
+    /* Start PWM with error handling */
+    status = HAL_TIM_PWM_Start(VALVE_PWM_TIMER, VALVE_PWM_CHANNEL);
+    if (status != HAL_OK) {
+        HAL_GPIO_WritePin(VALVE_GPIO_PORT, VALVE_GPIO_PIN, GPIO_PIN_RESET);
+        isOpening = false;
+        Error_Handler();
+        return;
+    }
+
+    /* Gradual PWM ramp-up */
+    uint16_t currentPWM = __HAL_TIM_GET_COMPARE(VALVE_PWM_TIMER, VALVE_PWM_CHANNEL);
+    rampValvePWM(currentPWM, valveOpenuS);
+
+    /* Post-operation stabilization */
+    HAL_Delay(VALVE_PWM_HOLD_DELAY_MS);
+
+    /* Graceful shutdown sequence */
+    status = HAL_TIM_PWM_Stop(VALVE_PWM_TIMER, VALVE_PWM_CHANNEL);
+    if (status != HAL_OK) {
+        // Consider adding retry logic here
+    }
+
+    /* Final deactivation */
+    HAL_Delay(VALVE_DEACTIVATE_DELAY_MS);
+    HAL_GPIO_WritePin(VALVE_GPIO_PORT, VALVE_GPIO_PIN, GPIO_PIN_RESET);
+
+    /* State update */
     valve_open = 1;
+    isOpening = false;
 }
 
 // Function to close the valve
 void closeValve(void)
 {
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);   // power to actuator
-    HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+    static volatile bool isClosing = false;
+    HAL_StatusTypeDef status;
 
-    uint16_t start = __HAL_TIM_GET_COMPARE(&htim2, TIM_CHANNEL_1);
-    rampValvePWM(start, valveCloseuS);
+    /* Re-entrancy protection */
+    if (isClosing) {
+        return;
+    }
+    isClosing = true;
 
-    HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+    /* Validate PWM parameters */
+    if (valveCloseuS < VALVE_MIN_PWM || valveCloseuS > VALVE_MAX_PWM) {
+        Error_Handler();
+        isClosing = false;
+        return;
+    }
+
+    /* Safety check: Ensure timer is stopped before starting */
+    HAL_TIM_PWM_Stop(VALVE_PWM_TIMER, VALVE_PWM_CHANNEL);
+
+    /* Actuator power control */
+    HAL_GPIO_WritePin(VALVE_GPIO_PORT, VALVE_GPIO_PIN, GPIO_PIN_SET);
+
+    /* Start PWM with error handling */
+    status = HAL_TIM_PWM_Start(VALVE_PWM_TIMER, VALVE_PWM_CHANNEL);
+    if (status != HAL_OK) {
+        HAL_GPIO_WritePin(VALVE_GPIO_PORT, VALVE_GPIO_PIN, GPIO_PIN_RESET);
+        isClosing = false;
+        Error_Handler();
+        return;
+    }
+
+    /* Gradual PWM ramp-down */
+    uint16_t currentPWM = __HAL_TIM_GET_COMPARE(VALVE_PWM_TIMER, VALVE_PWM_CHANNEL);
+    rampValvePWM(currentPWM, valveCloseuS);
+
+    /* Post-operation stabilization */
+    HAL_Delay(VALVE_PWM_HOLD_DELAY_MS);
+
+    /* Graceful shutdown sequence */
+    status = HAL_TIM_PWM_Stop(VALVE_PWM_TIMER, VALVE_PWM_CHANNEL);
+    if (status != HAL_OK) {
+        // Consider adding retry logic here
+    }
+
+    /* Final deactivation */
+    HAL_Delay(VALVE_DEACTIVATE_DELAY_MS);
+    HAL_GPIO_WritePin(VALVE_GPIO_PORT, VALVE_GPIO_PIN, GPIO_PIN_RESET);
+
+    /* State update */
     valve_open = 0;
+    isClosing = false;
 }
 
 static void rampValvePWM(uint16_t from, uint16_t to)
 {
-	/* ---- Tunables ------------------------------------------------------- */
-	const uint16_t STEP_US   = 10;   // 10 µs per step  (≈0.5 deg for most hobby servos)
-	const uint8_t  STEP_MS   = 10;   // 10 ms between steps (≈100 deg/s over 900-1800 µs range)
-	const uint16_t MIN_US    = 500;  // absolute safety limits
-	const uint16_t MAX_US    = 2500;
-	/* -------------------------------------------------------------------- */
+    /* Parameter validation */
+    if (from < VALVE_MIN_PWM) from = VALVE_MIN_PWM;
+    if (to < VALVE_MIN_PWM) to = VALVE_MIN_PWM;
+    if (from > VALVE_MAX_PWM) from = VALVE_MAX_PWM;
+    if (to > VALVE_MAX_PWM) to = VALVE_MAX_PWM;
 
-	/* Safety clamp                                                     */
-	if (to   < MIN_US) to   = MIN_US;
-	if (to   > MAX_US) to   = MAX_US;
-	if (from < MIN_US) from = MIN_US;
-	if (from > MAX_US) from = MAX_US;
+    const uint16_t STEP_US = 10;
+    const uint8_t STEP_MS = 10;
 
-	/* Decide direction + do the walk                                    */
-	if (from < to)                               /* increasing (e.g., open→close) */
-	{
-		for (uint16_t p = from; p <= to; p += STEP_US)
-		{
-			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, p);
-			HAL_Delay(STEP_MS);
-		}
-	}
-	else if (from > to)                          /* decreasing (e.g., close→open) */
-	{
-		for (uint16_t p = from; p >= to; p -= STEP_US)
-		{
-			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, p);
-			HAL_Delay(STEP_MS);
-			if (p < STEP_US) break;              /* protect against unsigned wrap */
-		}
-	}
-	/* small settle time so the motor can finish the move                */
-	HAL_Delay(100);
+    /* Direction detection */
+    int16_t direction = (to > from) ? 1 : -1;
+
+    /* Smooth transition */
+    while (from != to) {
+        from += (direction * STEP_US);
+
+        /* Boundary checks */
+        if (direction > 0 && from > to) from = to;
+        if (direction < 0 && from < to) from = to;
+
+        __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, from);
+        HAL_Delay(STEP_MS);
+    }
+
+    /* Final stabilization */
+    HAL_Delay(100);
 }
 
 

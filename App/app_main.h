@@ -22,6 +22,17 @@
 #define THRESH_LOW_UP      3270  // critical up to low
 #define THRESH_NORMAL_UP   3400   // low up to normal
 
+// Add to app_main.h near other defines
+#define VALVE_ACTIVATE_DELAY_MS    50
+#define VALVE_PWM_HOLD_DELAY_MS    500
+#define VALVE_DEACTIVATE_DELAY_MS  50
+#define VALVE_PWM_TIMER           (&htim2)
+#define VALVE_PWM_CHANNEL         TIM_CHANNEL_1
+#define VALVE_GPIO_PORT           GPIOA
+#define VALVE_GPIO_PIN            GPIO_PIN_7
+#define VALVE_MIN_PWM             500   // Absolute minimum PWM pulse width
+#define VALVE_MAX_PWM             2500  // Absolute maximum PWM pulse width
+
 // External peripheral handlers declaration
 extern ADC_HandleTypeDef hadc;
 extern TIM_HandleTypeDef htim2;
@@ -45,6 +56,9 @@ volatile  uint32_t holdTime = 0;
 
 volatile uint8_t second[6] = {0x0, 0x10, 0x20, 0x30, 0x40, 0x50};
 volatile uint8_t item = 0;
+
+volatile static bool isOpening = false;
+volatile static bool isClosing = false;
 
 // State definitions
 typedef enum {
